@@ -356,6 +356,27 @@ class S3Driver(Driver):
                                                key=blob_name)
         return self._make_blob(container, object_summary)
 
+    def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
+        source = {
+            'Bucket': container.name,
+            'Key': blob_name
+        }
+        try:
+            bucket = self.s3.Bucket(destination.name)
+            bucket.copy(source, dest_blob_name)
+        except ClientError as err:
+            error_code = int(err.response['Error']['Code'])
+            if error_code == 404:
+                raise NotFoundError(messages.BLOB_NOT_FOUND % (
+                    container.name, blob_name))
+
+            raise CloudStorageError('%s: %s' % (
+                err.response['Error']['Code'],
+                err.response['Error']['Message']))
+
+        return self.get_blob(destination, dest_blob_name)
+
+
     def get_blobs(self, container: Container) -> Iterable[Blob]:
         bucket = self._get_bucket(container.name, validate=False)
         for key in bucket.objects.all():  # s3.ObjectSummary

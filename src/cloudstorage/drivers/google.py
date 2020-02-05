@@ -336,6 +336,15 @@ class GoogleStorageDriver(Driver):
         g_blob = self._get_blob(container.name, blob_name)
         return self._make_blob(container, g_blob)
 
+    def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
+        source_bucket = self._get_bucket(container.name)
+        source_blob = source_bucket.blob(blob_name)
+
+        destination_bucket = self._get_bucket(destination.name)
+        source_bucket.copy_blob(source_blob, destination_bucket, dest_blob_name)
+
+        return self.get_blob(destination, dest_blob_name)
+
     def get_blobs(self, container: Container) -> Iterable[Blob]:
         bucket = self._get_bucket(container.name)
         for blob in bucket.list_blobs():
