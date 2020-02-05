@@ -298,6 +298,9 @@ class MinioDriver(Driver):
                                                            container.name))
         return self._make_obj(container, obj)
 
+    def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
+        raise NotImplementedError
+
     def get_blobs(self, container: Container) -> Iterable[Blob]:
         for obj in self.client.list_objects(container.name, recursive=False):
             yield self._make_obj(container, obj)

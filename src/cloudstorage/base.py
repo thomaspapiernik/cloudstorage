@@ -697,6 +697,30 @@ class Container:
         """
         return self.driver.get_blob(container=self, blob_name=blob_name)
 
+    def copy_blob(self, blob_name: str, destination: 'Container', dest_blob_name: str) -> Blob:
+        """Copy a blob object by name to another blob in another or the same container.
+
+        .. code-block:: python
+
+            container = storage.get_container('container-name')
+            dest_container = storage.get_container('destination-container-name')
+            picture_blob = container.copy_blob('picture.png', container)
+            # <Blob picture.png container-name S3>
+
+        :param blob_name: The name of the blob to retrieve.
+        :type blob_name: str
+
+        :return: The blob object if it exists.
+        :rtype: Blob
+
+        :raise NotFoundError: If the blob object doesn't exist.
+        """
+        return self.driver.copy_blob(
+            container=self,
+            blob_name=blob_name,
+            destination=destination,
+            dest_blob_name=dest_blob_name)
+
     def generate_upload_url(self, blob_name: str, expires: int = 3600,
                             acl: str = None, meta_data: MetaData = None,
                             content_disposition: str = None,
@@ -1234,6 +1258,29 @@ class Driver(metaclass=abc.ABCMeta):
     @abstractmethod
     def get_blob(self, container: 'Container', blob_name: str) -> 'Blob':
         """Get a blob object by name.
+
+        .. important:: This class method is called by :meth:`.Blob.get_blob`.
+
+        :param container: The container that holds the blob.
+        :type container: :class:`.Container`
+
+        :param blob_name: The name of the blob to retrieve.
+        :type blob_name: str
+
+        :return: The blob object if it exists.
+        :rtype: Blob
+
+        :raise NotFoundError: If the blob object doesn't exist.
+        """
+        pass
+
+    @abstractmethod
+    def copy_blob(
+            self, container: 'Container',
+            blob_name: str,
+            destination: 'Container',
+            blob_dest_name: str) -> 'Blob':
+        """Copy a blob object by name to the same or another .
 
         .. important:: This class method is called by :meth:`.Blob.get_blob`.
 

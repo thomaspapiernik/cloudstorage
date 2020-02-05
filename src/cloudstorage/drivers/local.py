@@ -472,6 +472,9 @@ class LocalDriver(Driver):
     def get_blob(self, container: Container, blob_name: str) -> Blob:
         return self._make_blob(container, blob_name)
 
+    def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
+        raise NotImplementedError
+
     def get_blobs(self, container: Container) -> Iterable[Blob]:
         container_path = self._get_folder_path(container, validate=True)
 

@@ -350,6 +350,9 @@ class AzureStorageDriver(Driver):
         azure_blob = self._get_azure_blob(azure_container.name, blob_name)
         return self._convert_azure_blob(container, azure_blob)
 
+    def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
+        raise NotImplementedError
+
     def get_blobs(self, container: Container) -> Iterable[Blob]:
         azure_container = self._get_azure_container(container.name)
 
