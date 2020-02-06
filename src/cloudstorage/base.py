@@ -1298,13 +1298,19 @@ class Driver(metaclass=abc.ABCMeta):
         pass
 
     @abstractmethod
-    def get_blobs(self, container: 'Container') -> Iterable['Blob']:
+    def get_blobs(self, container: 'Container', prefix : str = '', delimiter : str = '') -> Iterable['Blob']:
         """Get all blobs associated to the container.
 
         .. important:: This class method is called by :meth:`.Blob.__iter__`.
 
         :param container: A container instance.
         :type container: :class:`.Container`
+
+        :param prefix: A prefix use to filter the blob list
+        :type prefix: str
+
+        :param delimiter: A delimiter use to filter the blog list
+        :type delimiter: str
 
         :return: Iterable of all blobs belonging to this container.
         :rtype: Iterable{Blob]

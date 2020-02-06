@@ -377,9 +377,9 @@ class S3Driver(Driver):
         return self.get_blob(destination, dest_blob_name)
 
 
-    def get_blobs(self, container: Container) -> Iterable[Blob]:
+    def get_blobs(self, container: Container, prefix: str = '', delimiter: str = '') -> Iterable[Blob]:
         bucket = self._get_bucket(container.name, validate=False)
-        for key in bucket.objects.all():  # s3.ObjectSummary
+        for key in bucket.objects.filter(Prefix=prefix, Delimiter=delimiter):  # s3.ObjectSummary
             yield self._make_blob(container, key)
 
     def download_blob(self, blob: Blob,

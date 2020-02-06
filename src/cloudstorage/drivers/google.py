@@ -345,9 +345,9 @@ class GoogleStorageDriver(Driver):
 
         return self.get_blob(destination, dest_blob_name)
 
-    def get_blobs(self, container: Container) -> Iterable[Blob]:
+    def get_blobs(self, container: Container, prefix: str = '', delimiter: str = '') -> Iterable[Blob]:
         bucket = self._get_bucket(container.name)
-        for blob in bucket.list_blobs():
+        for blob in bucket.list_blobs(prefix=prefix, delimiter=delimiter):
             yield self._make_blob(container, blob)
 
     def download_blob(self, blob: Blob,
