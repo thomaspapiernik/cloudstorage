@@ -475,7 +475,7 @@ class LocalDriver(Driver):
     def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
         raise NotImplementedError
 
-    def get_blobs(self, container: Container) -> Iterable[Blob]:
+    def get_blobs(self, container: Container, prefix: str = '', delimiter: str = '') -> Iterable[Blob]:
         container_path = self._get_folder_path(container, validate=True)
 
         for folder, sub_folders, files in os.walk(container_path, topdown=True):
@@ -486,7 +486,9 @@ class LocalDriver(Driver):
 
             for name in files:
                 full_path = os.path.join(folder, name)
-                object_name = pathlib.Path(full_path).name
+                object_name = full_path.replace(container_path + os.path.sep, '')
+                if prefix and not object_name.startswith(prefix):
+                    continue
                 yield self._make_blob(container, object_name)
 
     def download_blob(self, blob: Blob,
@@ -520,6 +522,9 @@ class LocalDriver(Driver):
                 os.unlink(path)
             except OSError as err:
                 logger.exception(err)
+
+    def rename_blob(self, blob: 'Blob', new_name: str) -> 'Blob':
+        raise NotImplementedError
 
     def blob_cdn_url(self, blob: Blob) -> str:
         return os.path.join(self.base_path, blob.container.name, blob.name)
