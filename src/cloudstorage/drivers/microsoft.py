@@ -351,12 +351,25 @@ class AzureStorageDriver(Driver):
         return self._convert_azure_blob(container, azure_blob)
 
     def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
-        raise NotImplementedError
+        source_blob = self.get_blob(container, blob_name)
+        source_blob_url = self.blob_cdn_url(source_blob)
+        try:
+            self.service.copy_blob(destination.name, dest_blob_name, source_blob_url)
+        except AzureMissingResourceHttpError as err:
+            logger.debug(err)
+            raise NotFoundError(messages.CONTAINER_NOT_FOUND % container_name)
+        except AzureException as err:
+            logger.debug(err)
+            raise CloudStorageError("Error while copy "+blob_name+" into "+dest_blob_name)
 
-    def get_blobs(self, container: Container) -> Iterable[Blob]:
+        return self.get_blob(destination, dest_blob_name)
+
+    def get_blobs(self, container: Container, prefix: str = '', delimiter: str = '') -> Iterable[Blob]:
         azure_container = self._get_azure_container(container.name)
 
         azure_blobs = self.service.list_blobs(azure_container.name,
+                                              prefix=prefix,
+                                              delimiter=delimiter,
                                               include=Include(metadata=True))
         for azure_blob in azure_blobs:
             yield self._convert_azure_blob(container, azure_blob)

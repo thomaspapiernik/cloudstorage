@@ -250,3 +250,18 @@ def test_blob_generate_download_url_expiration(binary_blob):
 
     response = requests.get(download_url)
     assert response.status_code == HTTPStatus.FORBIDDEN, response.text
+
+
+def test_container_copy_blob(container, text_blob):
+    dest_blob_name = random_container_name()
+
+    blob = container.copy_blob(text_blob.name, container, dest_blob_name)
+    assert blob == text_blob
+
+
+def test_container_copy_blob_invalid(container):
+    blob_name = random_container_name()
+
+    # noinspection PyTypeChecker
+    with pytest.raises(NotFoundError):
+        container.copy_blob(blob_name, container, 'test')
