@@ -366,6 +366,9 @@ class GoogleStorageDriver(Driver):
         g_blob = self._get_blob(blob.container.name, blob.name)
         g_blob.delete()
 
+    def rename_blob(self, blob: 'Blob', new_name: str) -> 'Blob':
+        raise NotImplementedError
+
     def blob_cdn_url(self, blob: Blob) -> str:
         return self._get_blob(blob.container.name, blob.name).public_url
 

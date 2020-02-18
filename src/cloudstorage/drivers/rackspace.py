@@ -574,6 +574,9 @@ class CloudFilesDriver(Driver):
             raise NotFoundError(messages.BLOB_NOT_FOUND % (blob.name,
                                                            blob.container.name))
 
+    def rename_blob(self, blob: 'Blob', new_name: str) -> 'Blob':
+        raise NotImplementedError
+
     def blob_cdn_url(self, blob: Blob) -> str:
         container_cdn_url = self.container_cdn_url(blob.container)
         url = urljoin(container_cdn_url, quote(blob.name))

@@ -326,6 +326,9 @@ class MinioDriver(Driver):
         except ResponseError as err:
             raise CloudStorageError(err.message)
 
+    def rename_blob(self, blob: 'Blob', new_name: str) -> 'Blob':
+        raise NotImplementedError
+
     def blob_cdn_url(self, blob: Blob) -> str:
         container_url = self.container_cdn_url(blob.container)
         blob_name_cleaned = quote(blob.name)

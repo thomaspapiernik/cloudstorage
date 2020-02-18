@@ -1369,6 +1369,25 @@ class Driver(metaclass=abc.ABCMeta):
         pass
 
     @abstractmethod
+    def rename_blob(self, blob: 'Blob', new_name: str) -> 'Blob':
+        """Renames a blob from storage to a new name.
+
+        .. important:: This class method is called by :meth:`.Blob.rename`.
+
+        :param blob: The blob to rename.
+        :type blob: Blob
+
+        :param new_name: The new blob name.
+        :type new_name: str
+
+        :return: The new blob object.
+        :rtype: Blob
+
+        :raise NotFoundError: If the blob object doesn't exist.
+        """
+        pass
+
+    @abstractmethod
     def blob_cdn_url(self, blob: 'Blob') -> str:
         """The Content Delivery Network URL for the blob.
 

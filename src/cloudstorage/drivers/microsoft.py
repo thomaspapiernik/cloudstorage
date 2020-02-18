@@ -398,6 +398,9 @@ class AzureStorageDriver(Driver):
         azure_blob = self._get_azure_blob(blob.container.name, blob.name)
         self.service.delete_blob(blob.container.name, azure_blob.name)
 
+    def rename_blob(self, blob: 'Blob', new_name: str) -> 'Blob':
+        raise NotImplementedError
+
     def blob_cdn_url(self, blob: Blob) -> str:
         azure_blob = self._get_azure_blob(blob.container.name, blob.name)
         url = self.service.make_blob_url(blob.container.name, azure_blob.name)
