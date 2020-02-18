@@ -491,6 +491,8 @@ class LocalDriver(Driver):
         blob = self.get_blob(container, blob_name)
         blob_path = self._get_file_path(blob)
         dest_path = os.path.join(self.base_path, destination.name, dest_blob_name).replace('\\', '/')
+        base_path = os.path.dirname(dest_path)
+        self._make_path(base_path, ignore_existing=True)
         shutil.copy(blob_path, dest_path)
         return self.get_blob(destination, dest_blob_name)
 
