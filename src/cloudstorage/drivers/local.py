@@ -6,13 +6,19 @@ import os
 import pathlib
 import shutil
 import sys
+import platform
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Iterable, List
 
 import filelock
 import itsdangerous
-import xattr
+
+current_system=platform.system()
+if "Windows" not in current_system:
+    import xattr
+    
+
 from inflection import underscore
 
 from cloudstorage import Blob, Container, Driver, messages
@@ -68,7 +74,10 @@ def lock_local_file(path: str) -> filelock.FileLock:
     if lock.is_locked:
         lock.release()
 
-    os.remove(lock.lock_file)
+    try:
+        os.remove(lock.lock_file)
+    except:
+        pass
 
 
 class LocalDriver(Driver):
@@ -221,25 +230,29 @@ class LocalDriver(Driver):
         :raises CloudStorageError: If the local file system does not support
           extended filesystem attributes.
         """
-        xattrs = xattr.xattr(filename)
+        if "Windows" not in current_system:
+        
+            xattrs = xattr.xattr(filename)
 
-        for key, value in attributes.items():
-            if not value:
-                continue
+            for key, value in attributes.items():
+                if not value:
+                    continue
 
-            try:
-                if key == 'meta_data':
-                    for meta_key, meta_value in value.items():
-                        # user.metadata.name
-                        attr_name = self._OBJECT_META_PREFIX + 'metadata.' + \
-                                    meta_key  # noqa: E126
-                        xattrs[attr_name] = meta_value.encode('utf-8')
-                else:
-                    # user.name
-                    attr_name = self._OBJECT_META_PREFIX + key
-                    xattrs[attr_name] = value.encode('utf-8')
-            except OSError:
-                logger.warning(messages.LOCAL_NO_ATTRIBUTES)
+                try:
+                    if key == 'meta_data':
+                        for meta_key, meta_value in value.items():
+                            # user.metadata.name
+                            attr_name = self._OBJECT_META_PREFIX + 'metadata.' + \
+                                        meta_key  # noqa: E126
+                            xattrs[attr_name] = meta_value.encode('utf-8')
+                    else:
+                        # user.name
+                        attr_name = self._OBJECT_META_PREFIX + key
+                        xattrs[attr_name] = value.encode('utf-8')
+                except OSError:
+                    logger.warning(messages.LOCAL_NO_ATTRIBUTES)
+        else:
+            pass
 
     def _get_file_path(self, blob: Blob) -> str:
         """Get the blob's full folder path.
@@ -250,7 +263,7 @@ class LocalDriver(Driver):
         :return: Full folder path to the blob.
         :rtype: str
         """
-        return os.path.join(self.base_path, blob.container.name, blob.name)
+        return os.path.join(self.base_path, blob.container.name, blob.name).replace('\\', '/')
 
     @staticmethod
     def _make_path(path: str, ignore_existing: bool = True) -> None:
@@ -325,31 +338,32 @@ class LocalDriver(Driver):
         content_type = None
         content_disposition = None
         cache_control = None
+        
+        if "Windows" not in platform.system():
+            try:
+                attributes = xattr.xattr(full_path)
 
-        try:
-            attributes = xattr.xattr(full_path)
+                for attr_key, attr_value in attributes.items():
+                    value_str = None
 
-            for attr_key, attr_value in attributes.items():
-                value_str = None
+                    try:
+                        value_str = attr_value.decode('utf-8')
+                    except UnicodeDecodeError:
+                        pass
 
-                try:
-                    value_str = attr_value.decode('utf-8')
-                except UnicodeDecodeError:
-                    pass
-
-                if attr_key.startswith(self._OBJECT_META_PREFIX + 'metadata'):
-                    meta_key = attr_key.split('.')[-1]
-                    meta_data[meta_key] = value_str
-                elif attr_key.endswith('content_type'):
-                    content_type = value_str
-                elif attr_key.endswith('content_disposition'):
-                    content_disposition = value_str
-                elif attr_key.endswith('cache_control'):
-                    cache_control = value_str
-                else:
-                    logger.warning("Unknown file attribute '%s'", attr_key)
-        except OSError:
-            logger.warning(messages.LOCAL_NO_ATTRIBUTES)
+                    if attr_key.startswith(self._OBJECT_META_PREFIX + 'metadata'):
+                        meta_key = attr_key.split('.')[-1]
+                        meta_data[meta_key] = value_str
+                    elif attr_key.endswith('content_type'):
+                        content_type = value_str
+                    elif attr_key.endswith('content_disposition'):
+                        content_disposition = value_str
+                    elif attr_key.endswith('cache_control'):
+                        cache_control = value_str
+                    else:
+                        logger.warning("Unknown file attribute '%s'", attr_key)
+            except OSError:
+                logger.warning(messages.LOCAL_NO_ATTRIBUTES)
 
         # TODO: QUESTION: Option to disable checksum for large files?
         # TODO: QUESTION: Save a .hash file for each file?
@@ -366,6 +380,7 @@ class LocalDriver(Driver):
                     content_disposition=content_disposition,
                     content_type=content_type, cache_control=cache_control,
                     created_at=created_at, modified_at=modified_at)
+        pass
 
     def validate_credentials(self) -> None:
         if not os.access(self.base_path, os.W_OK):
@@ -473,9 +488,14 @@ class LocalDriver(Driver):
         return self._make_blob(container, blob_name)
 
     def copy_blob(self, container: Container, blob_name: str, destination: Container, dest_blob_name: str) -> Blob:
-        raise NotImplementedError
+        blob = self.get_blob(container, blob_name)
+        blob_path = self._get_file_path(blob)
+        dest_path = os.path.join(self.base_path, destination.name, dest_blob_name).replace('\\', '/')
+        shutil.copy(blob_path, dest_path)
+        return self.get_blob(destination, dest_blob_name)
 
     def get_blobs(self, container: Container, prefix: str = '', delimiter: str = '') -> Iterable[Blob]:
+
         container_path = self._get_folder_path(container, validate=True)
 
         for folder, sub_folders, files in os.walk(container_path, topdown=True):
@@ -487,7 +507,8 @@ class LocalDriver(Driver):
             for name in files:
                 full_path = os.path.join(folder, name)
                 object_name = full_path.replace(container_path + os.path.sep, '')
-                if prefix and not object_name.startswith(prefix):
+                object_name = object_name.replace(os.path.sep, '/')
+                if not object_name.startswith(prefix):
                     continue
                 yield self._make_blob(container, object_name)
 
