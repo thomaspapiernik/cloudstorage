@@ -16,7 +16,7 @@ from typing import Dict, Iterable, List, Any  # noqa: F401
 # noinspection PyPackageRequirements
 from google.cloud import storage
 # noinspection PyPackageRequirements
-from google.cloud.exceptions import Conflict, NotFound
+from google.cloud.exceptions import Conflict, NotFound, BadRequest
 # noinspection PyPackageRequirements
 from google.auth.exceptions import GoogleAuthError
 # noinspection PyPackageRequirements
@@ -164,6 +164,8 @@ class GoogleStorageDriver(Driver):
         try:
             return self.client.get_bucket(bucket_name)
         except NotFound:
+            raise NotFoundError(messages.CONTAINER_NOT_FOUND % bucket_name)
+        except BadRequest:
             raise NotFoundError(messages.CONTAINER_NOT_FOUND % bucket_name)
 
     def _make_container(self, bucket: Bucket) -> Container:
